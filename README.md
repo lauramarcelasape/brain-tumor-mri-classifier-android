@@ -84,7 +84,7 @@ Esta aplicación parte de la plantilla oficial de clasificación de imágenes de
 
 1. Clona este repositorio:
    ```bash
-   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git](https://github.com/lauramarcelasape/brain-tumor-mri-classifier-android)
+   git clone https://github.com/lauramarcelasape/brain-tumor-mri-classifier-android
    ```
 2. Abre la carpeta raíz directamente en **Android Studio**.
 3. Espera a que finalice la sincronización de Gradle (**Sync Project with Gradle Files**).
