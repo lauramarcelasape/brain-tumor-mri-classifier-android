@@ -69,6 +69,6 @@ public class PermissionsFragment extends Fragment {
 
     private void navigateToCamera() {
         Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                .navigate(PermissionsFragmentDirections.actionPermissionsToCamera());
+                .navigate(R.id.action_permissions_to_camera);
     }
 }

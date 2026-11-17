@@ -82,9 +82,7 @@ public class CameraFragment extends Fragment
 
         if (!PermissionsFragment.hasPermission(requireContext())) {
             Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                    .navigate(
-                            CameraFragmentDirections.actionCameraToPermissions()
-                    );
+                    .navigate(R.id.action_camera_to_permissions);
         }
     }
 
