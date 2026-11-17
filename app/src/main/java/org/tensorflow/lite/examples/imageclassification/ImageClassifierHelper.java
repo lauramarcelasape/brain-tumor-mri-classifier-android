@@ -29,7 +29,7 @@ public class ImageClassifierHelper {
 
     // true = normaliza píxeles a [0, 1] (dividiendo entre 255.0)
     // false = deja píxeles en [0, 255] (si tu modelo ya tiene capa Rescaling interna)
-    private static final boolean NORMALIZE_0_TO_1 = true;
+    private static final boolean NORMALIZE_0_TO_1 = false;
 
     private Interpreter interpreter;
     private List<String> labels;
