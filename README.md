@@ -6,7 +6,7 @@ Aplicación móvil nativa para Android desarrollada en Java que clasifica imáge
 
 | Sin Tumor (`notumor` — 0.94) |
 | :---:  |
-| <img src="/notumor.jpeg" width="240"/> | 
+| <img src="/noTumor.jpeg" width="240"/> | 
 
 ---
 
