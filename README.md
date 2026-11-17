@@ -1,59 +1,81 @@
-# TensorFlow Lite Image Classification Demo
+# 🧠 Clasificación de Tumores Cerebrales en Tiempo Real (Android + TFLite)
 
-### Overview
+Aplicación móvil nativa para **Android** que realiza clasificación de imágenes de resonancia magnética (MRI) cerebral en tiempo real y de forma 100 % *offline* mediante **Transfer Learning (MobileNetV2)** y **Google AI Edge LiteRT / TensorFlow Lite**.
 
-This is a camera app that continuously classifies the objects in the frames
-seen by your device's back camera, with the option to use a quantized
-[MobileNet V1](https://tfhub.dev/tensorflow/lite-model/mobilenet_v1_1.0_224_quantized/1/metadata/1),
-[EfficientNet Lite0](https://tfhub.dev/tensorflow/lite-model/efficientnet/lite0/int8/2),
-[EfficientNet Lite1](https://tfhub.dev/tensorflow/lite-model/efficientnet/lite1/int8/2),
-or
-[EfficientNet Lite2](https://tfhub.dev/tensorflow/lite-model/efficientnet/lite2/int8/2)
-model trained on Imagenet (ILSVRC-2012-CLS). These instructions
-walk you through building and running the demo on an Android device.
+---
 
-The model files are downloaded via Gradle scripts when you build and run the
-app. You don't need to do any steps to download TFLite models into the project
-explicitly.
+## 📋 Descripción del Proyecto
 
-This application should be run on a physical Android device.
+El sistema captura vídeo en directo desde la cámara del dispositivo mediante **CameraX**, preprocesa cada fotograma ($224 \times 224 \times 3$) y ejecuta inferencia local para clasificar resonancias magnéticas en 4 categorías clínicas:
 
-![App example showing UI controls. Result is espresso.](screenshot1.jpg?raw=true "Screenshot with controls")
+| Clase (`labels.txt`) | Carpeta Original Dataset | Descripción |
+| :--- | :--- | :--- |
+| **`glioma`** | `glioma_tumor` | Tumor originado en las células gliales del cerebro. |
+| **`meningioma`** | `meningioma_tumor` | Tumor que surge en las meninges que recubren el encéfalo. |
+| **`notumor`** | `no_tumor` | Resonancia magnética cerebral sana sin presencia de masa tumoral. |
+| **`pituitary`** | `pituitary_tumor` | Tumor localizado en la glándula pituitaria (visible en cortes sagitales/coronales). |
 
-![App example without UI controls. Result is espresso.](screenshot2.jpg?raw=true "Screenshot without controls")
+---
 
-This sample demonstrates how to use TensorFlow Lite with Java. If
-you would like to see an example using Kotlin, please go to the
-[android sample directory](../android).
+## 🔬 Entrenamiento del Modelo (Google Colab)
 
+El modelo fue entrenado y exportado en **Google Colab** utilizando **TensorFlow / Keras 2.21.0**:
 
-## Build the demo using Android Studio
+* **Dataset:** [Brain Tumor Classification DataSet (Sartaj Bhuvaji)](https://github.com/SartajBhuvaji/Brain-Tumor-Classification-DataSet), particionado en 80 % entrenamiento y 20 % validación (`224x224`, `BATCH_SIZE = 16`).
+* **Data Augmentation:** Transformaciones fotométricas ligeras (`RandomContrast(0.1)` y `RandomBrightness(0.1)`) aplicadas solo en entrenamiento para preservar las coordenadas anatómicas del tumor.
+* **Arquitectura (Transfer Learning):**
+  * Base congelada: `MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')`.
+  * Preprocesamiento integrado en el grafo: `tf.keras.applications.mobilenet_v2.preprocess_input` (escala píxeles de $[0, 255]$ a $[-1, 1]$).
+  * Cabecera de clasificación: `GlobalAveragePooling2D` $\rightarrow$ `Dense(128, relu)` $\rightarrow$ `Dropout(0.3)` $\rightarrow$ `Dense(4, softmax)`.
+* **Optimización y Exportación:** Entrenado con `Adam(lr=0.001)`, `EarlyStopping(patience=4)` y exportado mediante `TFLiteConverter` con cuantización dinámica (`tf.lite.Optimize.DEFAULT`).
 
-### Prerequisites
+---
 
-* The **[Android Studio](https://developer.android.com/studio/index.html)**
-    IDE (Android Studio 2021.2.1 or newer). This sample has been tested on
-    Android Studio Chipmunk
+## 📱 Arquitectura Android y Stack Tecnológico
 
-* A physical Android device with a minimum OS version of SDK 23 (Android 6.0 -
-    Marshmallow) with developer mode enabled. The process of enabling developer
-    mode may vary by device.
+* **Lenguaje / IDE:** Java 8 / Android Studio (`compileSdk 34`, `minSdk 24`).
+* **Motor de Inferencia:** `com.google.ai.edge.litert:litert:1.4.0` (compatible con operadores `FULLY_CONNECTED` v12 exportados desde TF 2.21.0).
+* **Captura de Cámara:** Android **CameraX 1.3.1**.
+* **Inferencia directa (`ImageClassifierHelper.java`):**
+  * Carga del modelo desde `assets` mediante `MappedByteBuffer` (`noCompress 'tflite'`).
+  * Rotación según orientación del sensor y reescalado a $224 \times 224$.
+  * Volcado de canales RGB en rango $[0, 255]$ a un `ByteBuffer` directo (`ByteOrder.nativeOrder()`) para alimentar la capa `preprocess_input` integrada en el `.tflite`.
 
-### Building
+---
 
-* Open Android Studio. From the Welcome screen, select Open an existing
-    Android Studio project.
+## 📂 Estructura Principal del Proyecto
 
-* From the Open File or Project window that appears, navigate to and select
-    the tensorflow-lite/examples/image_classification/android directory.
-    Click OK.
+```text
+├── app/src/main/
+│   ├── assets/
+│   │   ├── modelo_tumores.tflite     # Modelo MobileNetV2 cuantizado
+│   │   └── labels.txt                # Etiquetas en orden alfabético
+│   ├── java/org/tensorflow/lite/examples/imageclassification/
+│   │   ├── ImageClassifierHelper.java # Motor de preprocesamiento e inferencia LiteRT
+│   │   ├── MainActivity.java
+│   │   └── fragments/
+│   │       ├── CameraFragment.java
+│   │       └── ClassificationResultAdapter.java
+│   └── AndroidManifest.xml
+├── app/build.gradle                  # Dependencias LiteRT 1.4.0 y CameraX
+└── README.md
+```
 
-* If it asks you to do a Gradle Sync, click OK.
+---
 
-* With your Android device connected to your computer and developer mode
-    enabled, click on the green Run arrow in Android Studio.
+## 🚀 Instalación y Ejecución
 
-### Models used
+1. Clona este repositorio:
+   ```bash
+   git clone <URL_DE_TU_REPOSITORIO>
+   ```
+2. Abre el proyecto en **Android Studio** y espera a que finalice la sincronización de **Gradle**.
+3. Conecta un dispositivo Android físico con **Depuración USB** activada (o utiliza un emulador con cámara configurada).
+4. Pulsa **Run (`▶`)** para compilar e instalar la aplicación.
+5. *(Opcional)* Desliza hacia arriba el panel inferior de la app para ajustar en tiempo real el umbral de confianza (**Threshold**), el número máximo de resultados (**Max Results**) y los hilos de CPU (**Threads**).
 
-Downloading, extraction, and placing the models into the assets folder is
-managed automatically by the download.gradle file.
+---
+
+## 👩‍💻 Autoría
+
+* **Laura Marcela Sánchez Peláez** — *Deep Learning / Salud Digital (Práctica 6)*
