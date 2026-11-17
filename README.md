@@ -4,13 +4,10 @@ Aplicación móvil nativa para Android desarrollada en Java que clasifica imáge
 
 ## 📸 Capturas de Funcionamiento en Dispositivo Real
 
-| Sin Tumor (`notumor` — 1.00) | Glioma (`glioma` — 0.89) |
-| :---: | :---: |
-| <img src="/notumor.jpeg" width="240"/> | <img src="/glioma.jpeg" width="240"/> |
+| Sin Tumor (`notumor` — 0.94) |
+| :---:  |
+| <img src="/notumor.jpeg" width="240"/> | 
 
-| Meningioma (`meningioma` — 0.75) | Pituitario (`pituitary` — 0.92) |
-| :---: | :---: |
-| <img src="screenshots/meningioma.jpg" width="240"/> | <img src="screenshots/pituitary.jpg" width="240"/> |
 ---
 
 ## 🏗️ Proyecto Base y Atribución
