@@ -1,81 +1,97 @@
-# 🧠 Clasificación de Tumores Cerebrales en Tiempo Real (Android + TFLite)
+# 🧠📱 Brain Tumor MRI Classifier — Android (Transfer Learning + LiteRT / TFLite)
 
-Aplicación móvil nativa para **Android** que realiza clasificación de imágenes de resonancia magnética (MRI) cerebral en tiempo real y de forma 100 % *offline* mediante **Transfer Learning (MobileNetV2)** y **Google AI Edge LiteRT / TensorFlow Lite**.
-
----
-
-## 📋 Descripción del Proyecto
-
-El sistema captura vídeo en directo desde la cámara del dispositivo mediante **CameraX**, preprocesa cada fotograma ($224 \times 224 \times 3$) y ejecuta inferencia local para clasificar resonancias magnéticas en 4 categorías clínicas:
-
-| Clase (`labels.txt`) | Carpeta Original Dataset | Descripción |
-| :--- | :--- | :--- |
-| **`glioma`** | `glioma_tumor` | Tumor originado en las células gliales del cerebro. |
-| **`meningioma`** | `meningioma_tumor` | Tumor que surge en las meninges que recubren el encéfalo. |
-| **`notumor`** | `no_tumor` | Resonancia magnética cerebral sana sin presencia de masa tumoral. |
-| **`pituitary`** | `pituitary_tumor` | Tumor localizado en la glándula pituitaria (visible en cortes sagitales/coronales). |
+Aplicación móvil nativa para Android desarrollada en Java que clasifica imágenes de resonancia magnética (MRI) cerebral en tiempo real mediante **Transfer Learning (MobileNetV2)** y ejecución local *offline* con **Google AI Edge LiteRT / TensorFlow Lite**.
 
 ---
 
-## 🔬 Entrenamiento del Modelo (Google Colab)
+## 🏗️ Proyecto Base y Atribución
 
-El modelo fue entrenado y exportado en **Google Colab** utilizando **TensorFlow / Keras 2.21.0**:
+Esta aplicación parte de la plantilla oficial de clasificación de imágenes de **TensorFlow Examples**:
+* 🔗 **Repositorio original:** [tensorflow/examples](https://github.com/tensorflow/examples)
+* 📂 **Módulo base:** [`lite/examples/image_classification/android_java`](https://github.com/tensorflow/examples/tree/master/lite/examples/image_classification/android_java)
+* 📄 **Licencia base:** Apache License 2.0 (The TensorFlow Authors).
 
-* **Dataset:** [Brain Tumor Classification DataSet (Sartaj Bhuvaji)](https://github.com/SartajBhuvaji/Brain-Tumor-Classification-DataSet), particionado en 80 % entrenamiento y 20 % validación (`224x224`, `BATCH_SIZE = 16`).
-* **Data Augmentation:** Transformaciones fotométricas ligeras (`RandomContrast(0.1)` y `RandomBrightness(0.1)`) aplicadas solo en entrenamiento para preservar las coordenadas anatómicas del tumor.
-* **Arquitectura (Transfer Learning):**
-  * Base congelada: `MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')`.
-  * Preprocesamiento integrado en el grafo: `tf.keras.applications.mobilenet_v2.preprocess_input` (escala píxeles de $[0, 255]$ a $[-1, 1]$).
-  * Cabecera de clasificación: `GlobalAveragePooling2D` $\rightarrow$ `Dense(128, relu)` $\rightarrow$ `Dropout(0.3)` $\rightarrow$ `Dense(4, softmax)`.
-* **Optimización y Exportación:** Entrenado con `Adam(lr=0.001)`, `EarlyStopping(patience=4)` y exportado mediante `TFLiteConverter` con cuantización dinámica (`tf.lite.Optimize.DEFAULT`).
-
----
-
-## 📱 Arquitectura Android y Stack Tecnológico
-
-* **Lenguaje / IDE:** Java 8 / Android Studio (`compileSdk 34`, `minSdk 24`).
-* **Motor de Inferencia:** `com.google.ai.edge.litert:litert:1.4.0` (compatible con operadores `FULLY_CONNECTED` v12 exportados desde TF 2.21.0).
-* **Captura de Cámara:** Android **CameraX 1.3.1**.
-* **Inferencia directa (`ImageClassifierHelper.java`):**
-  * Carga del modelo desde `assets` mediante `MappedByteBuffer` (`noCompress 'tflite'`).
-  * Rotación según orientación del sensor y reescalado a $224 \times 224$.
-  * Volcado de canales RGB en rango $[0, 255]$ a un `ByteBuffer` directo (`ByteOrder.nativeOrder()`) para alimentar la capa `preprocess_input` integrada en el `.tflite`.
+### ✨ Principales modificaciones respecto al proyecto base:
+* 🔄 Sustitución del motor `ImageClassifier` (Task Vision) por inferencia directa mediante `org.tensorflow.lite.Interpreter` en `ImageClassifierHelper.java` para soportar modelos personalizados sin metadatos incrustados.
+* ⚡ Migración del motor de inferencia a **Google AI Edge LiteRT (`litert:1.4.0`)** para garantizar compatibilidad con modelos exportados en TensorFlow 2.21.0 (`FULLY_CONNECTED` v12).
+* 🎨 Ajuste de la tubería de preprocesamiento de tensores (`[0, 255]`) para alinearlo con la capa interna `mobilenet_v2.preprocess_input` del modelo entrenado.
+* 🧬 Sustitución de los modelos por defecto por un modelo propio entrenado en Google Colab (`modelo_tumores.tflite` y `labels.txt`).
 
 ---
 
-## 📂 Estructura Principal del Proyecto
+## 🚀 Características Principales
+
+* 🔒 **Inferencia 100 % Offline y en Tiempo Real:** Procesamiento continuo de fotogramas mediante **CameraX** sin necesidad de conexión a Internet ni envío de imágenes médicas a servidores externos.
+* 🩺 **Clasificación Multiclase (4 categorías):**
+  1. **`glioma`**: Tumor originado en las células gliales del cerebro.
+  2. **`meningioma`**: Tumor que surge en las meninges que recubren el encéfalo.
+  3. **`notumor`**: Resonancia magnética cerebral sana sin presencia de masa tumoral.
+  4. **`pituitary`**: Tumor localizado en la glándula pituitaria (observable principalmente en cortes sagitales y coronales).
+* 🎛️ **Controles Dinámicos en Interfaz:** Panel desplegable inferior que permite ajustar en caliente el umbral mínimo de confianza (*Threshold*), el número máximo de resultados (*Max Results*) y el número de hilos de CPU (*Threads*).
+
+---
+
+## 🧪 Dataset y Entrenamiento (Google Colab)
+
+* 📓 **Cuaderno de entrenamiento:** [Abrir en Google Colab (`Brain_Tumor_Android.ipynb`)][(https://colab.research.google.com/drive/1KsFD3Ji8aICny5hXAaIUc7dkICB4oiaN)](https://colab.research.google.com/drive/10JFQrHe20IXoe5Ih2wBmgDEKeGCuz4tX?usp=sharing)
+* 🗂️ **Dataset:** [Brain Tumor Classification DataSet (Sartaj Bhuvaji)](https://github.com/SartajBhuvaji/Brain-Tumor-Classification-DataSet), estandarizado en `Training` (80 % entrenamiento / 20 % validación, `seed=123`, `224x224x3`) y `Testing`.
+* 🖼️ **Aumentación de Datos:** `RandomContrast(0.1)` y `RandomBrightness(0.1)` aplicados exclusivamente al conjunto de entrenamiento para preservar las coordenadas espaciales del tumor.
+* 🧠 **Arquitectura de Transfer Learning:**
+  * Base **MobileNetV2** preentrenada en ImageNet (`include_top=False`, pesos congelados).
+  * Capa `tf.keras.applications.mobilenet_v2.preprocess_input` integrada en el grafo del modelo (reescala $[0, 255] \rightarrow [-1, 1]$).
+  * Cabecera personalizada: `GlobalAveragePooling2D` $\rightarrow$ `Dense(128, relu)` $\rightarrow$ `Dropout(0.3)` $\rightarrow$ `Dense(4, softmax)`.
+* 📦 **Exportación:** Conversión a `.tflite` mediante `tf.lite.TFLiteConverter` con cuantización dinámica por defecto (`tf.lite.Optimize.DEFAULT`).
+
+---
+
+## 🛠️ Stack Tecnológico
+
+* 🐍 **Entrenamiento:** Google Colab (GPU), Python 3, TensorFlow / Keras `2.21.0`, `scikit-learn`
+* 🤖 **Aplicación Móvil:** Android Studio, Java 8, Gradle (`compileSdk 34`, `minSdk 24`)
+* ⚙️ **Motor de Inferencia:** Google AI Edge LiteRT (`com.google.ai.edge.litert:litert:1.4.0`)
+* 📷 **Captura de Cámara:** Android CameraX (`1.3.1`)
+
+---
+
+## 🧩 Arquitectura y Decisiones Técnicas Clave
+
+1. **Inferencia Directa con `Interpreter` (`ImageClassifierHelper.java`):** Se desacopló la carga del modelo de `ImageClassifier` (Task Vision) para evitar errores por ausencia de metadatos TFLite, manteniendo la compatibilidad total con la interfaz gráfica (`Category` y `Classifications`).
+2. **Migración a LiteRT `1.4.0`:** Resuelve la incompatibilidad del operador `FULLY_CONNECTED` (versión 12) generado por TensorFlow 2.21.0 frente a las librerías heredadas de `tensorflow-lite` 2.16, excluyendo los módulos antiguos en `build.gradle` para evitar conflictos de *namespace*.
+3. **Alineación del Rango de Píxeles (`[0, 255]`):** Dado que el modelo exportado incorpora internamente `mobilenet_v2.preprocess_input`, el volcado al `ByteBuffer` mantiene los canales RGB en `[0, 255]` (`NORMALIZE_0_TO_1 = false`), evitando la doble normalización.
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```text
-├── app/src/main/
-│   ├── assets/
-│   │   ├── modelo_tumores.tflite     # Modelo MobileNetV2 cuantizado
-│   │   └── labels.txt                # Etiquetas en orden alfabético
-│   ├── java/org/tensorflow/lite/examples/imageclassification/
-│   │   ├── ImageClassifierHelper.java # Motor de preprocesamiento e inferencia LiteRT
-│   │   ├── MainActivity.java
-│   │   └── fragments/
-│   │       ├── CameraFragment.java
-│   │       └── ClassificationResultAdapter.java
-│   └── AndroidManifest.xml
-├── app/build.gradle                  # Dependencias LiteRT 1.4.0 y CameraX
-└── README.md
+├── app/
+│   ├── build.gradle                              # Dependencias LiteRT y CameraX (noCompress 'tflite')
+│   └── src/main/
+│       ├── assets/
+│       │   ├── modelo_tumores.tflite             # Modelo MobileNetV2 entrenado y cuantizado
+│       │   └── labels.txt                        # Etiquetas en orden alfabético
+│       └── java/org/tensorflow/lite/examples/imageclassification/
+│           ├── ImageClassifierHelper.java        # Carga de modelo, preprocesamiento e inferencia
+│           ├── fragments/CameraFragment.java     # Flujo de vídeo CameraX y control de UI
+│           └── fragments/ClassificationResultAdapter.java
+├── build.gradle
+└── settings.gradle
 ```
 
 ---
 
-## 🚀 Instalación y Ejecución
+## ▶️ Instalación y Ejecución
 
 1. Clona este repositorio:
    ```bash
-   git clone <URL_DE_TU_REPOSITORIO>
+   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git](https://github.com/lauramarcelasape/brain-tumor-mri-classifier-android)
    ```
-2. Abre el proyecto en **Android Studio** y espera a que finalice la sincronización de **Gradle**.
-3. Conecta un dispositivo Android físico con **Depuración USB** activada (o utiliza un emulador con cámara configurada).
-4. Pulsa **Run (`▶`)** para compilar e instalar la aplicación.
-5. *(Opcional)* Desliza hacia arriba el panel inferior de la app para ajustar en tiempo real el umbral de confianza (**Threshold**), el número máximo de resultados (**Max Results**) y los hilos de CPU (**Threads**).
+2. Abre la carpeta raíz directamente en **Android Studio**.
+3. Espera a que finalice la sincronización de Gradle (**Sync Project with Gradle Files**).
+4. Conecta un dispositivo físico Android con **Depuración USB** activada (probado en OnePlus 7T Pro) y pulsa **Run (`▶`)**.
 
 ---
 
-## 👩‍💻 Autoría
+## 👩‍💻 Autora
 
-* **Laura Marcela Sánchez Peláez** — *Deep Learning / Salud Digital (Práctica 6)*
+* **Laura Marcela Sánchez Peláez** — Práctica 6 (PR6), *Deep Learning / Salud Digital*.
